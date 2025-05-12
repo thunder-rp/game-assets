@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <img id="page-1" src="./page-1.jpg">
+        <img id="page-2" src="./page-2.jpg">
+    </div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const images = document.querySelectorAll('.app img');
+        
+        images.forEach((image) => {
+            let isZoomed = false;
+
+            image.addEventListener('click', function() {
+                if (!isZoomed) {
+                    // Zoom in
+                    this.style.transform = 'scale(1.2)';
+                    this.style.cursor = 'zoom-out';
+                    this.style.zIndex = '2';
+                } else {
+                    // Zoom out
+                    this.style.transform = 'scale(1)';
+                    this.style.cursor = 'zoom-in';
+                    this.style.zIndex = 'unset';
+                }
+                isZoomed = !isZoomed;
+            });
+
+            // Add initial zoom-in cursor
+            image.style.cursor = 'zoom-in';
+        });
+    });
+</script>
+
+</body>
+</html>
