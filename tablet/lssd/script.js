@@ -1,4 +1,3 @@
-// ... existing code ...
 let isAppOpen = false;
 
 $(document).ready(function() {
@@ -17,4 +16,3 @@ $(document).ready(function() {
         isAppOpen = false;
     });
 });
-// ... existing code ...
