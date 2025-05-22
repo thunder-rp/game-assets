@@ -31,7 +31,7 @@
     outline: 1px solid rgba(255, 255, 255, 0.11);
     outline-offset: -1px;
     box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
-    transition: all cubic-bezier(.46,.43,.1,.99) 0.2s;
+    transition: all cubic-bezier(.46, .43, .1, .99) 0.2s;
     gap: 10px;
 }
 
@@ -46,7 +46,7 @@
     border-radius: 10px;
     outline: 1px solid rgba(255, 255, 255, 0);
     outline-offset: -1px;
-    transition: all cubic-bezier(.46,.43,.1,.99) 0.2s;
+    transition: all cubic-bezier(.46, .43, .1, .99) 0.2s;
     cursor: pointer;
 }
 
@@ -84,10 +84,26 @@
 
 .app iframe {
     border-radius: 10px;
-    outline: 1px solid rgb(255 255 255 / 22%);
+    outline: 1px solid rgba(255, 255, 255, 0.11);
     outline-offset: -1px;
     box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
     transition: all cubic-bezier(.46, .43, .1, .99) 0.2s;
     height: 90vh;
     width: 90vw;
+}
+
+.app .return-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10;
+    background-color: #498DBF;
+    border: none;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    padding: 10px 15px;
+    border-radius: 5px;
+    outline: 1px solid rgb(255 255 255 / 34%);
+    outline-offset: -1px;
+    cursor: pointer;
 }

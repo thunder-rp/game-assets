@@ -6,6 +6,7 @@ $(document).ready(function() {
         $('#app-iframe').attr('src', link);
         $('.app-list-container').hide();
         $('.app').show();
+        $('.app').addClass('show');
         isAppOpen = true;
     });
 
@@ -13,6 +14,7 @@ $(document).ready(function() {
         $('#app-iframe').attr('src', '');
         $('.app').hide();
         $('.app-list-container').show();
+        $('.app').removeClass('show');
         isAppOpen = false;
     });
 });
