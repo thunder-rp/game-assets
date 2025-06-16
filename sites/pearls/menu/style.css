@@ -1,0 +1,31 @@
+* {
+    margin: 0;
+    user-select: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+}
+
+
+.app {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.app img {
+    border-radius: 10px;
+    outline: 1px solid rgb(255 255 255 / 22%);
+    outline-offset: -1px;
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    transition: all cubic-bezier(.46, .43, .1, .99) 0.2s;
+    height: 90vh;
+}
