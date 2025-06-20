@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <img src="triad.png">
+    </div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const image = document.querySelector('.app img');
+        let isZoomed = false;
+
+        image.addEventListener('click', function() {
+            if (!isZoomed) {
+                // Zoom in
+                this.style.transform = 'scale(1.5)';
+                this.style.cursor = 'zoom-out';
+            } else {
+                // Zoom out
+                this.style.transform = 'scale(1)';
+                this.style.cursor = 'zoom-in';
+            }
+            isZoomed = !isZoomed;
+        });
+
+        // Add initial zoom-in cursor
+        image.style.cursor = 'zoom-in';
+    });
+</script>
+
+</body>
+</html>
