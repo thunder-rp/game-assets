@@ -47,7 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let startX, startY;
   const minScale = 0.3;     // tu peux définir une taille plus petite si tu veux
   const maxScale = 3;
-  const zoomStep = 0.5;
+  const zoomStep = 0.2;
+  const zoomCenterX = 0;
+  const zoomCenterY = 0;
 
   function updateTransform() {
     img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
@@ -70,6 +72,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const delta = -e.deltaY || e.wheelDelta;
     let zoomDirection = delta > 0 ? 0.5 : -0.5;
 
+    // On prend la position du curseur comme centre du zoom
+    const rect = img.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const zoomCenterX = x / rect.width;
+    const zoomCenterY = y / rect.height;
+
     let newScale = scale + zoomDirection * zoomStep;
     if (newScale < minScale) newScale = minScale;
     if (newScale > maxScale) newScale = maxScale;
@@ -81,6 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
     //}
 
     scale = newScale;
+    const dx = (1 - zoomCenterX) * (scale - 1) * rect.width;
+    const dy = (1 - zoomCenterY) * (scale - 1) * rect.height;
+
+    translateX += dx;
+    translateY += dy;
+
     updateTransform();
   }, { passive: false });
 
