@@ -30,3 +30,11 @@
     transition: all cubic-bezier(.46, .43, .1, .99) 0.0s;
     height: 90vh;
 }
+
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+}

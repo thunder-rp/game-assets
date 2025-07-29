@@ -1,139 +1,233 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Document</title>
-<style>
-  body, html {
-    margin: 0; padding: 0; height: 100%;
-    overflow: hidden;
-  }
-  .app {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    background: #eee;
-    overflow: hidden;
-  }
-  img {
-    position: relative;
-    cursor: grab;
-    user-select: none;
-    transition: transform 0.0s ease;
-    max-width: none;
-    display: block;
-    transform-origin: center center;
-    z-index: 1;
-  }
-  img.grabbing {
-    cursor: grabbing !important;
-  }
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Document</title>
+    <style>
+        body, html {
+            margin: 0; padding: 0; height: 100vh;
+            overflow: hidden;
+        }
+        .app {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #eee;
+            overflow: hidden;
+        }
+        img {
+            position: relative;
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.0s ease;
+            max-width: none;
+            display: block;
+            transform-origin: center center;
+            z-index: 1;
+        }
+        img.grabbing {
+            cursor: grabbing !important;
+        }
+    </style>
 </head>
 <body>
-<div class="app">
-  <img id="page-1" src="./page.webp" alt="Article" />
-</div>
+    <div class="app">
+        <!-- <img id="page-1" src="./page.webp" alt="Article" /> -->
+        <canvas id="canvas"></canvas>
+    </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const img = document.getElementById('page-1');
-  let scale = 0.3;            // taille de base
+    <script>
+        const IMGURL = "./page.webp";
 
-  let translateX = 11;
-  let translateY = -1113;
-  let isDragging = false;
-  let startX, startY;
-  const minScale = 0.3;     // tu peux définir une taille plus petite si tu veux
-  const maxScale = 3;
-  const zoomStep = 0.2;
-  const zoomCenterX = 0;
-  const zoomCenterY = 0;
+        const ZOOMINLEVEL = 1.2;
+        const ZOOMOUTLEVEL = 0.8;
+        const MINZOOMLEVEL = 0.1;
+        const MAXZOOMLEVEL = 15;
+        const PANSTEP = 20;
+        const DEFAULTCURSOR = "crosshair";
+        const MOUSEDOWNCURSOR = "grab";
+        const ZOOMINCURSOR = "zoom-in";
+        const ZOOMOUTCURSOR = "zoom-out";
+        const IMAGESMOOTHINGENABLED = false;
 
-  function updateTransform() {
-    img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        var currentZoomLevel = 1;
+        var isDragging = false;
+        var dragStartPosition = { x: 0, y: 0 };
 
-    // Mise à jour du curseur et du zIndex selon la taille
-    if (scale === 1) {
-      img.style.zIndex = 'unset';
-    } else {
-      img.style.cursor = 'grab';
-      img.style.zIndex = '2';
-    }
-  }
+        var canvas,
+            context,
+            image,
+            currentTransformedCursor,
+            scaledImgWidth,
+            scaledImgHeight,
+            startX,
+            startY,
+            canvasCenterX,
+            canvasCenterY,
+            zoomLevelTxt,
+            mousePos,
+            transformedMousePos,
+            scale;
 
-  // Initial update (taille de base)
-  updateTransform();
+        window.onload = () => {
+            loadImage();
+            addEventListeners();
+        };
 
-  img.addEventListener('wheel', (e) => {
-    e.preventDefault();
+        function loadImage() {
+            canvas = document.getElementById("canvas");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            context = canvas.getContext("2d");
+            context.imageSmoothingEnabled = IMAGESMOOTHINGENABLED;
 
-    const delta = -e.deltaY || e.wheelDelta;
-    let zoomDirection = delta > 0 ? 0.5 : -0.5;
+            zoomLevelTxt = document.getElementById("zoom-level");
+            mousePos = document.getElementById("mouse-pos");
+            transformedMousePos = document.getElementById("transformed-mouse-pos");
 
-    // On prend la position du curseur comme centre du zoom
-    const rect = img.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const zoomCenterX = x / rect.width;
-    const zoomCenterY = y / rect.height;
+            image = new Image();
 
-    let newScale = scale + zoomDirection * zoomStep;
-    if (newScale < minScale) newScale = minScale;
-    if (newScale > maxScale) newScale = maxScale;
+            image.onload = function () {
+                init();
+                reset();
+            };
+            image.src = IMGURL;
+        }
 
-    // Si on revient à scale 1 (taille normale), on remet position à zéro
-    //if (scale !== 1 && newScale === 1) {
-    //  translateX = 0;
-    //  translateY = 0;
-    //}
+        function init() {
+            scale = Math.min(canvas.width / image.width, canvas.height / image.height);
+            scaledImgWidth = image.width * scale;
+            scaledImgHeight = image.height * scale;
+            startX = (canvas.width - scaledImgWidth) / 2;
+            startY = (canvas.height - scaledImgHeight) / 2;
+            canvasCenterX = canvas.width / 2;
+            canvasCenterY = canvas.height / 2;
+            canvas.style.cursor = DEFAULTCURSOR;
+            context.save();
+        }
 
-    scale = newScale;
-    const dx = (1 - zoomCenterX) * (scale - 1) * rect.width;
-    const dy = (1 - zoomCenterY) * (scale - 1) * rect.height;
+        function drawImageToCanvas() {
+            context.save();
+            context.setTransform(1, 0, 0, 1, 0, 0);
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.restore();
+            context.drawImage(image, startX, startY, scaledImgWidth, scaledImgHeight);
+        }
 
-    translateX += dx;
-    translateY += dy;
+        function getTransformedPoint(x, y) {
+            const originalPoint = new DOMPoint(x, y);
+            return context.getTransform().invertSelf().transformPoint(originalPoint);
+        }
 
-    updateTransform();
-  }, { passive: false });
+        function onMouseDown(event) {
+            isDragging = true;
+            canvas.style.cursor = MOUSEDOWNCURSOR;
+            dragStartPosition = getTransformedPoint(event.offsetX, event.offsetY);
+        }
 
-  img.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    isDragging = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    img.classList.add('grabbing');
-  });
+        function onMouseMove(event) {
+            canvas.style.cursor = DEFAULTCURSOR;
+            currentTransformedCursor = getTransformedPoint(event.offsetX, event.offsetY);
 
-  window.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
+            event.preventDefault();
 
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
+            if (isDragging) {
+                pan(
+                    currentTransformedCursor.x - dragStartPosition.x,
+                    currentTransformedCursor.y - dragStartPosition.y
+                );
+            }
+        }
 
-    startX = e.clientX;
-    startY = e.clientY;
+        function onMouseUp() {
+            isDragging = false;
+            canvas.style.cursor = DEFAULTCURSOR;
+        }
 
-    translateX += dx;
-    translateY += dy;
+        function onWheel(event) {
+            zoom(event.deltaY < 0 ? ZOOMINLEVEL : ZOOMOUTLEVEL);
+            event.preventDefault();
+        }
 
-    updateTransform();
-  });
+        function zoom(zoomLevel) {
+            if (currentZoomLevel == MINZOOMLEVEL && zoomLevel <= 1) {
+                return;
+            }
 
-  window.addEventListener('mouseup', () => {
-    if (isDragging) {
-      isDragging = false;
-      img.classList.remove('grabbing');
-    }
-  });
+            if (currentZoomLevel == MAXZOOMLEVEL && zoomLevel >= 1) {
+                return;
+            }
 
-  // Bloquer le drag natif
-  img.ondragstart = () => false;
-});
-</script>
+            currentZoomLevel = Math.min(
+                Math.max(currentZoomLevel * zoomLevel, MINZOOMLEVEL),
+                MAXZOOMLEVEL
+            );
 
+            canvas.style.cursor = zoomLevel > 1 ? ZOOMINCURSOR : ZOOMOUTCURSOR;
+            context.translate(currentTransformedCursor.x, currentTransformedCursor.y);
+            context.scale(zoomLevel, zoomLevel);
+            context.translate(-currentTransformedCursor.x, -currentTransformedCursor.y);
+            drawImageToCanvas();
+        }
+
+        function pan(x, y) {
+            context.translate(x, y);
+            drawImageToCanvas();
+        }
+
+        function rotate(degrees) {
+            context.translate(canvasCenterX, canvasCenterY);
+            context.rotate((Math.PI / 180) * degrees);
+            context.translate(-canvasCenterX, -canvasCenterY);
+            drawImageToCanvas();
+        }
+
+        function mirror() {
+            context.translate(canvasCenterX, canvasCenterY);
+            context.scale(-1, 1);
+            context.translate(-canvasCenterX, -canvasCenterY);
+            drawImageToCanvas();
+        }
+
+        function flip() {
+            context.translate(canvasCenterX, canvasCenterY);
+            context.scale(1, -1);
+            context.translate(-canvasCenterX, -canvasCenterY);
+            drawImageToCanvas();
+        }
+
+        function center() {
+            drawImageToCanvas(true);
+        }
+
+        function reset() {
+            context.restore();
+            context.save();
+            drawImageToCanvas();
+            currentZoomLevel = 1;
+            canvas.style.cursor = DEFAULTCURSOR;
+        }
+
+        function addEventListeners() {
+            canvas.addEventListener("mousedown", onMouseDown);
+            canvas.addEventListener("mousemove", onMouseMove);
+            canvas.addEventListener("mouseup", onMouseUp);
+            canvas.addEventListener("wheel", onWheel);
+        }
+
+        function displayMousePos(x, y) {
+            var transX = currentTransformedCursor.x.toFixed(2);
+            var transY = currentTransformedCursor.y.toFixed(2);
+            mousePos.innerText = `Original (${x}, ${y})`;
+            transformedMousePos.innerText = `Transformed (${transX}, ${transY})`;
+        }
+
+        function displayZoomLevel() {
+            zoomLevelTxt.innerText = +currentZoomLevel.toFixed(2);
+        }
+
+    </script>
 </body>
 </html>
+
