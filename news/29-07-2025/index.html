@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Document</title>
+<style>
+  body, html {
+    margin: 0; padding: 0; height: 100%;
+    overflow: hidden;
+  }
+  .app {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: #eee;
+    overflow: hidden;
+  }
+  img {
+    position: relative;
+    cursor: grab;
+    user-select: none;
+    transition: transform 0.0s ease;
+    max-width: none;
+    display: block;
+    transform-origin: center center;
+    z-index: 1;
+  }
+  img.grabbing {
+    cursor: grabbing !important;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <img id="page-1" src="./page.webp" alt="Article" />
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const img = document.getElementById('page-1');
+  let scale = 0.3;            // taille de base
+
+  let translateX = 11;
+  let translateY = -1113;
+  let isDragging = false;
+  let startX, startY;
+  const minScale = 0.3;     // tu peux définir une taille plus petite si tu veux
+  const maxScale = 3;
+  const zoomStep = 0.5;
+
+  function updateTransform() {
+    img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+
+    // Mise à jour du curseur et du zIndex selon la taille
+    if (scale === 1) {
+      img.style.zIndex = 'unset';
+    } else {
+      img.style.cursor = 'grab';
+      img.style.zIndex = '2';
+    }
+  }
+
+  // Initial update (taille de base)
+  updateTransform();
+
+  img.addEventListener('wheel', (e) => {
+    e.preventDefault();
+
+    const delta = -e.deltaY || e.wheelDelta;
+    let zoomDirection = delta > 0 ? 0.5 : -0.5;
+
+    let newScale = scale + zoomDirection * zoomStep;
+    if (newScale < minScale) newScale = minScale;
+    if (newScale > maxScale) newScale = maxScale;
+
+    // Si on revient à scale 1 (taille normale), on remet position à zéro
+    //if (scale !== 1 && newScale === 1) {
+    //  translateX = 0;
+    //  translateY = 0;
+    //}
+
+    scale = newScale;
+    updateTransform();
+  }, { passive: false });
+
+  img.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    img.classList.add('grabbing');
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    startX = e.clientX;
+    startY = e.clientY;
+
+    translateX += dx;
+    translateY += dy;
+
+    updateTransform();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      img.classList.remove('grabbing');
+    }
+  });
+
+  // Bloquer le drag natif
+  img.ondragstart = () => false;
+});
+</script>
+
+</body>
+</html>
