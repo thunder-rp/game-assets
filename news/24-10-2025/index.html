@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Document</title>
+    <style>
+        body, html {
+            margin: 0; padding: 0; height: 100vh;
+            overflow: hidden;
+        }
+        .app {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #eee;
+            overflow: hidden;
+        }
+        img {
+            position: relative;
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.0s ease;
+            max-width: none;
+            display: block;
+            transform-origin: center center;
+            z-index: 1;
+        }
+        img.grabbing {
+            cursor: grabbing !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- <img id="page-1" src="./page.webp" alt="Article" /> -->
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <script>
+        const IMGURL = "./pagepaper.webp";
+
+        const ZOOMINLEVEL = 1.2;
+        const ZOOMOUTLEVEL = 0.8;
+        const MINZOOMLEVEL = 0.1;
+        const MAXZOOMLEVEL = 15;
+        const PANSTEP = 20;
+        const DEFAULTCURSOR = "crosshair";
+        const MOUSEDOWNCURSOR = "grab";
+        const ZOOMINCURSOR = "zoom-in";
+        const ZOOMOUTCURSOR = "zoom-out";
+        const IMAGESMOOTHINGENABLED = false;
+
+        var currentZoomLevel = 1;
+        var isDragging = false;
+        var dragStartPosition = { x: 0, y: 0 };
+
+        var canvas,
+            context,
+            image,
+            currentTransformedCursor,
+            scaledImgWidth,
+            scaledImgHeight,
+            startX,
+            startY,
+            canvasCenterX,
+            canvasCenterY,
+            zoomLevelTxt,
+            mousePos,
+            transformedMousePos,
+            scale;
+
+        window.onload = () => {
+            loadImage();
+            addEventListeners();
+        };
+
+        function loadImage() {
+            canvas = document.getElementById("canvas");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            context = canvas.getContext("2d");
+            context.imageSmoothingEnabled = IMAGESMOOTHINGENABLED;
+
+            zoomLevelTxt = document.getElementById("zoom-level");
+            mousePos = document.getElementById("mouse-pos");
+            transformedMousePos = document.getElementById("transformed-mouse-pos");
+
+            image = new Image();
+
+            image.onload = function () {
+                init();
+                reset();
+            };
+            image.src = IMGURL;
+        }
+
+        function init() {
+            scale = Math.min(canvas.width / image.width, canvas.height / image.height);
+            scaledImgWidth = image.width * scale;
+            scaledImgHeight = image.height * scale;
+            startX = (canvas.width - scaledImgWidth) / 2;
+            startY = (canvas.height - scaledImgHeight) / 2;
+            canvasCenterX = canvas.width / 2;
+            canvasCenterY = canvas.height / 2;
+            canvas.style.cursor = DEFAULTCURSOR;
+            context.save();
+        }
+
+        function drawImageToCanvas() {
+            context.save();
+            context.setTransform(1, 0, 0, 1, 0, 0);
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.restore();
+            context.drawImage(image, startX, startY, scaledImgWidth, scaledImgHeight);
+        }
+
+        function getTransformedPoint(x, y) {
+            const originalPoint = new DOMPoint(x, y);
+            return context.getTransform().invertSelf().transformPoint(originalPoint);
+        }
+
+        function onMouseDown(event) {
+            isDragging = true;
+            canvas.style.cursor = MOUSEDOWNCURSOR;
+            dragStartPosition = getTransformedPoint(event.offsetX, event.offsetY);
+        }
+
+        function onMouseMove(event) {
+            canvas.style.cursor = DEFAULTCURSOR;
+            currentTransformedCursor = getTransformedPoint(event.offsetX, event.offsetY);
+
+            event.preventDefault();
+
+            if (isDragging) {
+                pan(
+                    currentTransformedCursor.x - dragStartPosition.x,
+                    currentTransformedCursor.y - dragStartPosition.y
+                );
+            }
+        }
+
+        function onMouseUp() {
+            isDragging = false;
+            canvas.style.cursor = DEFAULTCURSOR;
+        }
+
+        function onWheel(event) {
+            zoom(event.deltaY < 0 ? ZOOMINLEVEL : ZOOMOUTLEVEL);
+            event.preventDefault();
+        }
+
+        function zoom(zoomLevel) {
+            if (currentZoomLevel == MINZOOMLEVEL && zoomLevel <= 1) {
+                return;
+            }
+
+            if (currentZoomLevel == MAXZOOMLEVEL && zoomLevel >= 1) {
+                return;
+            }
+
+            currentZoomLevel = Math.min(
+                Math.max(currentZoomLevel * zoomLevel, MINZOOMLEVEL),
+                MAXZOOMLEVEL
+            );
+
+            canvas.style.cursor = zoomLevel > 1 ? ZOOMINCURSOR : ZOOMOUTCURSOR;
+            context.translate(currentTransformedCursor.x, currentTransformedCursor.y);
+            context.scale(zoomLevel, zoomLevel);
+            context.translate(-currentTransformedCursor.x, -currentTransformedCursor.y);
+            drawImageToCanvas();
+        }
+
+        function pan(x, y) {
+            context.translate(x, y);
+            drawImageToCanvas();
+        }
+
+        function rotate(degrees) {
+            context.translate(canvasCenterX, canvasCenterY);
+            context.rotate((Math.PI / 180) * degrees);
+            context.translate(-canvasCenterX, -canvasCenterY);
+            drawImageToCanvas();
+        }
+
+        function mirror() {
+            context.translate(canvasCenterX, canvasCenterY);
+            context.scale(-1, 1);
+            context.translate(-canvasCenterX, -canvasCenterY);
+            drawImageToCanvas();
+        }
+
+        function flip() {
+            context.translate(canvasCenterX, canvasCenterY);
+            context.scale(1, -1);
+            context.translate(-canvasCenterX, -canvasCenterY);
+            drawImageToCanvas();
+        }
+
+        function center() {
+            drawImageToCanvas(true);
+        }
+
+        function reset() {
+            context.restore();
+            context.save();
+            drawImageToCanvas();
+            currentZoomLevel = 1;
+            canvas.style.cursor = DEFAULTCURSOR;
+        }
+
+        function addEventListeners() {
+            canvas.addEventListener("mousedown", onMouseDown);
+            canvas.addEventListener("mousemove", onMouseMove);
+            canvas.addEventListener("mouseup", onMouseUp);
+            canvas.addEventListener("wheel", onWheel);
+        }
+
+        function displayMousePos(x, y) {
+            var transX = currentTransformedCursor.x.toFixed(2);
+            var transY = currentTransformedCursor.y.toFixed(2);
+            mousePos.innerText = `Original (${x}, ${y})`;
+            transformedMousePos.innerText = `Transformed (${transX}, ${transY})`;
+        }
+
+        function displayZoomLevel() {
+            zoomLevelTxt.innerText = +currentZoomLevel.toFixed(2);
+        }
+
+    </script>
+</body>
+</html>
+
